@@ -1,0 +1,30 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "app/(tabs)/bookmarks.jsx",
+    "app/(tabs)/_layout.jsx",
+    "app/(tabs)/create.jsx",
+    "contants/colors.js",
+    "assets/styles/signup.styles.js",
+    "assets/styles/login.styles.js",
+    "assets/styles/create.styles.js",
+    "app/index.jsx",
+    "app/_layout.jsx",
+    "app/(tabs)/profile.jsx",
+    "app/(tabs)/notifications.jsx",
+    "app/(tabs)/index.jsx",
+    "app/(auth)/signup.jsx",
+    "app/(auth)/index.jsx",
+    "app/(auth)/_layout.jsx"
+  ]
+}
