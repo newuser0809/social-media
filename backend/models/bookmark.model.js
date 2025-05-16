@@ -6,6 +6,7 @@ const bookmarkSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true, // để dễ truy vấn bookmark của 1 user
     },
     post: {
       type: mongoose.Schema.Types.ObjectId,
@@ -13,10 +14,12 @@ const bookmarkSchema = new mongoose.Schema(
       required: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true, // thêm createdAt & updatedAt
+  }
 );
 
-// Đảm bảo 1 user chỉ bookmark 1 post duy nhất 1 lần
+// Đảm bảo mỗi user chỉ có thể bookmark 1 post một lần
 bookmarkSchema.index({ user: 1, post: 1 }, { unique: true });
 
 const Bookmark = mongoose.model("Bookmark", bookmarkSchema);

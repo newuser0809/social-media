@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary";
-
-// models
+import Post from "../models/post.model.js";
 import Notification from "../models/notification.model.js";
 import User from "../models/user.model.js";
 
@@ -10,7 +9,8 @@ export const getUserProfile = async (req, res) => {
 
   try {
     const user = await User.findOne({ username }).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
     res.status(200).json(user);
   } catch (error) {
@@ -28,25 +28,25 @@ export const followUnfollowUser = async (req, res) => {
     if (id === req.user._id.toString()) {
       return res
         .status(400)
-        .json({ error: "You can't follow/unfollow yourself" });
+        .json({ error: "Bạn không thể theo dõi/bỏ theo dõi chính mình" });
     }
 
     if (!userToModify || !currentUser)
-      return res.status(400).json({ error: "User not found" });
+      return res.status(400).json({ error: "Không tìm thấy người dùng" });
 
     const isFollowing = currentUser.following.includes(id);
 
     if (isFollowing) {
-      // Unfollow the user
+      // Bỏ theo dõi người dùng
       await User.findByIdAndUpdate(id, { $pull: { followers: req.user._id } });
       await User.findByIdAndUpdate(req.user._id, { $pull: { following: id } });
 
-      res.status(200).json({ message: "User unfollowed successfully" });
+      res.status(200).json({ message: "Người dùng đã bỏ theo dõi thành công" });
     } else {
-      // Follow the user
+      // Theo dõi người dùng
       await User.findByIdAndUpdate(id, { $push: { followers: req.user._id } });
       await User.findByIdAndUpdate(req.user._id, { $push: { following: id } });
-      // Send notification to the user
+      // Tạo thông báo theo dõi
       const newNotification = new Notification({
         type: "follow",
         from: req.user._id,
@@ -55,7 +55,7 @@ export const followUnfollowUser = async (req, res) => {
 
       await newNotification.save();
 
-      res.status(200).json({ message: "User followed successfully" });
+      res.status(200).json({ message: "Người dùng đã theo dõi thành công" });
     }
   } catch (error) {
     console.log("Error in followUnfollowUser: ", error.message);
@@ -75,19 +75,17 @@ export const getSuggestedUsers = async (req, res) => {
       "_id"
     );
 
-    // Nếu đã follow tất cả người còn lại
     const unfollowedUsers = allOtherUsers.filter(
       (user) => !followingIds.includes(user._id)
     );
 
     if (unfollowedUsers.length === 0) {
       return res.status(200).json({
-        message: "You're following everyone already!",
+        message: "Bạn đã theo dõi mọi người rồi!",
         users: [],
       });
     }
 
-    // Nếu chưa follow hết thì lấy ngẫu nhiên một số user
     const randomUsers = await User.aggregate([
       { $match: { _id: { $ne: userId } } },
       { $sample: { size: 10 } },
@@ -103,11 +101,45 @@ export const getSuggestedUsers = async (req, res) => {
     });
 
     res.status(200).json({
-      message: "Suggested users found.",
+      message: "Đã tìm thấy người dùng được đề xuất.",
       users: suggestedUsers,
     });
   } catch (error) {
     console.error("Error in getSuggestedUsers:", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    res.status(200).json(users);
+  } catch (error) {
+    console.log("Error in getAllUsers: ", error.message);
+    res.status(500).json({ error: error.message });
+  }
+};
+export const deleteUser = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Kiểm tra nếu người dùng có tồn tại trong cơ sở dữ liệu
+    const user = await User.findById(id);
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
+
+    // Xóa tất cả bài đăng của người dùng
+    const postsDeleted = await Post.deleteMany({ userId: id });
+    console.log(`${postsDeleted.deletedCount} posts deleted`);
+
+    // Xóa người dùng
+    await User.findByIdAndDelete(id);
+
+    res.status(200).json({
+      message: "Người dùng và bài viết của họ đã được xóa thành công",
+    });
+  } catch (error) {
+    console.log("Error in deleteUser: ", error.message);
     res.status(500).json({ error: error.message });
   }
 };
@@ -121,25 +153,26 @@ export const updateUser = async (req, res) => {
 
   try {
     let user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user)
+      return res.status(404).json({ message: "Không tìm thấy người dùng" });
 
     if (
       (!newPassword && currentPassword) ||
       (!currentPassword && newPassword)
     ) {
       return res.status(400).json({
-        error: "Please provide both current password and new password",
+        error: "Vui lòng cung cấp cả mật khẩu hiện tại và mật khẩu mới",
       });
     }
 
     if (currentPassword && newPassword) {
       const isMatch = await bcrypt.compare(currentPassword, user.password);
       if (!isMatch)
-        return res.status(400).json({ error: "Current password is incorrect" });
+        return res.status(400).json({ error: "Mật khẩu hiện tại không đúng" });
       if (newPassword.length < 6) {
         return res
           .status(400)
-          .json({ error: "Password must be at least 6 characters long" });
+          .json({ error: "Mật khẩu phải dài ít nhất 6 ký tự" });
       }
 
       const salt = await bcrypt.genSalt(10);
@@ -148,7 +181,6 @@ export const updateUser = async (req, res) => {
 
     if (profileImg) {
       if (user.profileImg) {
-        // https://res.cloudinary.com/dyfqon1v6/image/upload/v1712997552/zmxorcxexpdbh8r0bkjb.png
         await cloudinary.uploader.destroy(
           user.profileImg.split("/").pop().split(".")[0]
         );
@@ -179,7 +211,6 @@ export const updateUser = async (req, res) => {
 
     user = await user.save();
 
-    // password should be null in response
     user.password = null;
 
     return res.status(200).json(user);

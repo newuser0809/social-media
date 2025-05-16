@@ -14,10 +14,10 @@ export default function Post({ post, onLike, currentUserId }) {
         <Link href={`/${"tab"}/profile`}>
           <TouchableOpacity style={styles.postHeader}>
             <Image
-              source={{ uri: post.user.profileImg }}
+              source={{ uri: post?.user?.profileImg }}
               style={styles.postAvatar}
             />
-            <Text style={styles.postUsername}>{post.user.username}</Text>
+            <Text style={styles.postUsername}>{post?.user?.username}</Text>
           </TouchableOpacity>
         </Link>
         <TouchableOpacity>

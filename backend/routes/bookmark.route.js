@@ -1,17 +1,20 @@
 import express from "express";
 import {
-  addBookmark,
-  removeBookmark,
   getBookmarks,
+  toggleBookmark,
+  isBookmarked,
 } from "../controllers/bookmark.controller.js";
 import { protectRoute } from "../middleware/protectRoute.js";
 
 const router = express.Router();
 
+// Lấy danh sách bookmarks của người dùng hiện tại
 router.get("/", protectRoute, getBookmarks);
 
-router.post("/", protectRoute, addBookmark);
+// Kiểm tra một bài viết cụ thể đã được bookmark hay chưa
+router.get("/:postId", protectRoute, isBookmarked);
 
-router.delete("/:postId", protectRoute, removeBookmark);
+// Toggle trạng thái bookmark (mới)
+router.post("/toggle", protectRoute, toggleBookmark);
 
 export default router;
